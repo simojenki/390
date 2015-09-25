@@ -1,0 +1,29 @@
+#!/bin/bash
+
+daemon=false
+sleep=60
+next=5
+
+while getopts ":ds:n:" opt; do
+  case $opt in
+		d)
+			daemon=true
+			;;
+		n)
+			next=$OPTARG
+			;;	
+		s)
+			sleep=$OPTARG
+			;;
+ 		\?)
+			echo "Invalid option: -$OPTARG" >&2
+			exit 1
+			;;
+	esac
+done
+
+while [ true ]; do
+	curl --silent https://api.tfl.gov.uk/StopPoint/490001171G/arrivals  | jq 'sort_by(.timeToStation) | .[] | select(.lineId=="390") | .timeToStation' | head -n ${next} | xargs -I {} date -u -d @{} +"%T" 
+	[[ X"${daemon}" == X"true" ]] || exit 0
+	sleep ${sleep}
+done
